@@ -1,15 +1,8 @@
 #!/bin/bash
 
-# Configure Apache to use Render's PORT
-if [ -n "$PORT" ]; then
-    echo "Configuring Apache to use port $PORT..."
-    sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf
-    sed -i "s/80/$PORT/g" /etc/apache2/ports.conf
-fi
-
-# Initialize database
+# Initialize database first
 ./init-db.sh
 
-# Start Apache
-echo "Starting Apache on port ${PORT:-80}..."
-apache2-foreground
+# Start PHP built-in server on Render's PORT
+echo "Starting PHP server on port ${PORT:-8000}..."
+exec php -S 0.0.0.0:${PORT:-8000}
