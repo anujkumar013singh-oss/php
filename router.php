@@ -1,6 +1,22 @@
 <?php
 // router.php - Router script for PHP built-in server
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Set CORS headers for all requests
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Content-Type: application/json');
+
+// Handle preflight OPTIONS requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 $request_uri = $_SERVER['REQUEST_URI'];
 $request_method = $_SERVER['REQUEST_METHOD'];
 
@@ -12,6 +28,9 @@ switch ($path) {
     case '/':
     case '/index':
     case '/index.html':
+        // Reset headers for HTML
+        header_remove('Content-Type');
+        header('Content-Type: text/html; charset=UTF-8');
         include 'index.html';
         break;
         
@@ -50,12 +69,27 @@ switch ($path) {
         $file_path = __DIR__ . $path;
         if (file_exists($file_path) && is_file($file_path)) {
             $mime_type = mime_content_type($file_path);
+            header_remove('Content-Type');
             header("Content-Type: $mime_type");
             readfile($file_path);
         } else {
-            // Return 404 for unknown routes
+            // Return detailed 404 for unknown routes
             http_response_code(404);
-            echo json_encode(['error' => 'Not found']);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Not found',
+                'path' => $path,
+                'method' => $request_method,
+                'available_routes' => [
+                    '/' => 'index.html',
+                    '/login.php' => 'Login endpoint',
+                    '/register.php' => 'Register endpoint',
+                    '/logout.php' => 'Logout endpoint',
+                    '/users.php' => 'Users endpoint',
+                    '/debug.php' => 'Debug endpoint',
+                    '/create-db.php' => 'Database creation endpoint'
+                ]
+            ]);
         }
         break;
 }

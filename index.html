@@ -628,13 +628,22 @@ async function submitLogin() {
   setLoading('login-btn','login-spinner','login-label', true);
 
   try {
-    const res  = await fetch(API + '/login.php', {
+    const apiUrl = API + '/login.php';
+    console.log('Logging in to:', apiUrl);
+    
+    const res  = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ email, password: pass })
     });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
     const data = await res.json();
+    console.log('Login response:', data);
 
     if (data.success) {
       showDashboard(data.user);
@@ -642,8 +651,8 @@ async function submitLogin() {
       showAlert('login-alert', data.message || 'Login failed. Please try again.');
     }
   } catch (e) {
-    // DEMO mode: simulate login with seeded data
-    demoLogin(email, pass);
+    console.error('Login error:', e);
+    showAlert('login-alert', `Network error: ${e.message}. Please check your connection.`);
   } finally {
     setLoading('login-btn','login-spinner','login-label', false);
   }
@@ -662,13 +671,22 @@ async function submitRegister() {
   setLoading('reg-btn','reg-spinner','reg-label', true);
 
   try {
-    const res  = await fetch(API + '/register.php', {
+    const apiUrl = API + '/register.php';
+    console.log('Registering to:', apiUrl);
+    
+    const res  = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ name, email, password: pass, role })
     });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
     const data = await res.json();
+    console.log('Register response:', data);
 
     if (data.success) {
       showLogin();
@@ -677,8 +695,8 @@ async function submitRegister() {
       showAlert('reg-alert', data.message || 'Registration failed.');
     }
   } catch (e) {
-    // DEMO mode
-    demoRegister(name, email, pass, role);
+    console.error('Registration error:', e);
+    showAlert('reg-alert', `Network error: ${e.message}. Please check your connection.`);
   } finally {
     setLoading('reg-btn','reg-spinner','reg-label', false);
   }
