@@ -519,7 +519,7 @@
 
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
-const API = '';   // Set to your backend URL, e.g. 'https://yoursite.com/api'
+const API = window.location.origin;   // Dynamic URL for both local and production
 let currentUser = null;
 let allUsers    = [];
 let currentFilter = 'all';

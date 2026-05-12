@@ -2,10 +2,10 @@
 // config.php - Database configuration
 // Update these values with your hosting credentials
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'user_management');
-define('DB_USER', 'root');       // Change to your DB username
-define('DB_PASS', '');           // Change to your DB password
+define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+define('DB_NAME', $_ENV['DB_NAME'] ?? 'user_management');
+define('DB_USER', $_ENV['DB_USER'] ?? 'root');       // Change to your DB username
+define('DB_PASS', $_ENV['DB_PASS'] ?? '');           // Change to your DB password
 define('DB_CHARSET', 'utf8mb4');
 
 function getDB() {

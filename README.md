@@ -85,9 +85,22 @@ const API = 'http://localhost:8000'; // or your live domain
 5. Update `API` const in `index.html` to your live domain
 
 ### Option B — Railway / Render
-1. Push to GitHub
-2. Connect Railway → add MySQL plugin
-3. Set env vars for DB credentials (update config.php to use `getenv()`)
+**Render Deployment (Recommended):**
+1. Push to GitHub (already done)
+2. Go to https://render.com and sign up with GitHub
+3. Click "New" → "Web Service"
+4. Connect your GitHub repository: `anujkumar013singh-oss/php`
+5. Render will auto-detect `render.yaml` and set up:
+   - PHP web service
+   - MySQL database
+   - Environment variables
+6. Click "Create Web Service" - Deploy automatically!
+
+**Manual Render Setup (if needed):**
+1. Create Web Service (PHP)
+2. Create Database (MySQL)
+3. Set Environment Variables:
+   - `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`
 4. Deploy
 
 ---
