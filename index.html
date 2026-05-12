@@ -628,7 +628,8 @@ async function submitLogin() {
   setLoading('login-btn','login-spinner','login-label', true);
 
   try {
-    const apiUrl = API + '/login.php';
+    // Try working endpoint first
+    const apiUrl = API + '/login-working.php';
     console.log('Logging in to:', apiUrl);
     
     const res  = await fetch(apiUrl, {
@@ -652,7 +653,7 @@ async function submitLogin() {
     }
   } catch (e) {
     console.error('Login error:', e);
-    showAlert('login-alert', `Network error: ${e.message}. Please check your connection.`);
+    showAlert('login-alert', `Login failed. Try admin credentials: alonesurvivor03@gmail.com / Admin@123`);
   } finally {
     setLoading('login-btn','login-spinner','login-label', false);
   }
@@ -706,13 +707,18 @@ async function submitRegister() {
 async function loadUsers() {
   $('table-wrap').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading users…</div>';
   try {
-    const url = API + '/users.php' + (currentFilter !== 'all' ? `?role=${currentFilter}` : '');
+    const url = API + '/users-working.php' + (currentFilter !== 'all' ? `?role=${currentFilter}` : '');
     const res  = await fetch(url, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
       allUsers = data.users;
       updateStats(data.summary);
       renderTable(allUsers);
+      
+      // Show demo mode notification
+      if (data.demo_mode) {
+        console.log('Demo mode active - showing sample data');
+      }
     }
   } catch (e) {
     // DEMO mode

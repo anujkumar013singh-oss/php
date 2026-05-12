@@ -44,6 +44,11 @@ switch ($path) {
         include 'login-simple.php';
         break;
         
+    case '/login-working':
+    case '/login-working.php':
+        include 'login-working.php';
+        break;
+        
     case '/register':
     case '/register.php':
         include 'register.php';
@@ -57,6 +62,11 @@ switch ($path) {
     case '/users':
     case '/users.php':
         include 'users.php';
+        break;
+        
+    case '/users-working':
+    case '/users-working.php':
+        include 'users-working.php';
         break;
         
     case '/debug':
