@@ -17,14 +17,14 @@ WORKDIR /var/www/html
 # Copy all application files
 COPY . .
 
-# Make init script executable
-RUN chmod +x init-db.sh
+# Make scripts executable
+RUN chmod +x init-db.sh start-apache.sh
 
 # Set correct permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# Expose port 80 (Apache default)
-EXPOSE 80
+# Expose the port (Render will set this via PORT env var)
+EXPOSE 10000
 
-# Start database initialization and Apache
-CMD ["/bin/bash", "-c", "./init-db.sh && apache2-foreground"]
+# Start Apache with port configuration and database initialization
+CMD ["./start-apache.sh"]
