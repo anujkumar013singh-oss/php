@@ -1,11 +1,10 @@
 services:
-  # PHP Web Service
+  # PHP Web Service (Docker)
   - type: web
     name: nexaauth-app
-    runtime: php
+    env: docker
     plan: free
-    buildCommand: ""
-    startCommand: php -S 0.0.0.0:$PORT
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: DB_HOST
         fromDatabase:
