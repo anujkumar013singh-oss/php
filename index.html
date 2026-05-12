@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NexaAuth — User Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f0f5;
+    --muted: #888899;
+    --accent: #7c6dfa;
+    --accent2: #a78bfa;
+    --accent-glow: rgba(124,109,250,0.18);
+    --success: #22d3a0;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --admin-bg: rgba(124,109,250,0.12);
+    --admin-text: #a78bfa;
+    --user-bg: rgba(34,211,160,0.1);
+    --user-text: #34d399;
+    --ff: 'DM Sans', sans-serif;
+    --fh: 'Syne', sans-serif;
+    --r: 12px;
+    --r2: 20px;
+  }
+
+  html, body { height: 100%; }
+  body {
+    font-family: var(--ff);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Orbs ── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+  }
+  .orb-1 { width: 500px; height: 500px; background: #4f3fbf; top: -200px; right: -150px; }
+  .orb-2 { width: 350px; height: 350px; background: #1d4ed8; bottom: -100px; left: -100px; }
+
+  /* ── Layout ── */
+  #app { position: relative; z-index: 1; min-height: 100vh; }
+
+  /* ── Auth Pages ── */
+  .auth-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--r2);
+    padding: 2.5rem;
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), #5b21b6);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-family: var(--fh); font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent2); }
+
+  .auth-title { font-family: var(--fh); font-size: 1.6rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .auth-sub   { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.8rem; }
+
+  /* ── Form Elements ── */
+  .field { margin-bottom: 1.1rem; }
+  .field label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.3px; text-transform: uppercase; }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    color: var(--text);
+    font-family: var(--ff);
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+  }
+  .field input::placeholder { color: var(--muted); }
+  .field input:focus,
+  .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field input.err { border-color: var(--danger); }
+  .field .err-msg { font-size: 0.78rem; color: var(--danger); margin-top: 4px; display: none; }
+  .field .err-msg.show { display: block; }
+
+  .field select option { background: #1a1a24; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--r);
+    font-family: var(--ff);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), #5b21b6);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(124,109,250,0.3);
+  }
+  .btn-primary:hover  { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,109,250,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text);
+  }
+  .btn-ghost:hover { background: var(--surface2); border-color: var(--accent); }
+
+  .btn-sm { padding: 0.45rem 1rem; font-size: 0.85rem; }
+
+  .btn-filter {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-family: var(--ff);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-filter.active,
+  .btn-filter:hover { background: var(--admin-bg); border-color: var(--accent); color: var(--accent2); }
+
+  /* ── Switch link ── */
+  .switch-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.87rem;
+    color: var(--muted);
+  }
+  .switch-link a {
+    color: var(--accent2);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .switch-link a:hover { text-decoration: underline; }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: var(--r);
+    font-size: 0.88rem;
+    margin-bottom: 1.2rem;
+    display: none;
+    animation: slideUp 0.25s ease;
+  }
+  .alert.show { display: flex; align-items: flex-start; gap: 8px; }
+  .alert-err  { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+  .alert-ok   { background: rgba(34,211,160,0.1);  border: 1px solid rgba(34,211,160,0.3);  color: var(--success); }
+
+  /* ── Dashboard ── */
+  .dash { display: none; }
+  .dash.active { display: block; }
+
+  /* Topbar */
+  .topbar {
+    background: rgba(17,17,24,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar .logo { margin-bottom: 0; }
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 100px;
+    padding: 0.4rem 1rem;
+    font-size: 0.88rem;
+  }
+  .user-chip .avatar {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--accent), #5b21b6);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+
+  /* Content */
+  .dash-content { padding: 2rem; max-width: 1100px; margin: 0 auto; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r2);
+    padding: 1.5rem;
+    animation: slideUp 0.4s ease both;
+  }
+  .stat-card:nth-child(2) { animation-delay: 0.05s; }
+  .stat-card:nth-child(3) { animation-delay: 0.1s; }
+  .stat-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 0.5rem; }
+  .stat-val   { font-family: var(--fh); font-size: 2rem; font-weight: 700; }
+  .stat-icon  { font-size: 1.4rem; margin-bottom: 0.5rem; }
+
+  /* Table section */
+  .table-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r2);
+    overflow: hidden;
+    animation: slideUp 0.4s 0.15s ease both;
+  }
+  .table-header {
+    padding: 1.3rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .table-title { font-family: var(--fh); font-size: 1.1rem; font-weight: 600; }
+
+  .filter-row { display: flex; gap: 8px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: rgba(255,255,255,0.03); }
+  th {
+    padding: 0.75rem 1.25rem;
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  td { padding: 1rem 1.25rem; border-top: 1px solid var(--border); font-size: 0.9rem; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .badge-admin { background: var(--admin-bg); color: var(--admin-text); }
+  .badge-user  { background: var(--user-bg);  color: var(--user-text);  }
+  .badge::before { content: '●'; font-size: 7px; }
+
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .u-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--accent2);
+    flex-shrink: 0;
+  }
+  .u-name  { font-weight: 500; }
+  .u-email { font-size: 0.8rem; color: var(--muted); }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .spinner.show { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Register btn inside login */
+  .inline-register-btn {
+    display: block;
+    width: 100%;
+    margin-top: 0.6rem;
+    padding: 0.7rem;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: var(--r);
+    color: var(--muted);
+    font-family: var(--ff);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .inline-register-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .stats-row .stat-card:last-child { grid-column: span 2; }
+    .topbar { padding: 1rem; }
+    .dash-content { padding: 1rem; }
+    table { font-size: 0.82rem; }
+    th, td { padding: 0.6rem 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div id="app">
+
+  <!-- ══ AUTH SECTION ══════════════════════════════════════════════════════ -->
+  <div id="auth-section" class="auth-wrap">
+
+    <!-- LOGIN FORM -->
+    <div id="login-card" class="auth-card">
+      <div class="logo">
+        <div class="logo-icon">⬡</div>
+        <div class="logo-text">Nexa<span>Auth</span></div>
+      </div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">Sign in to your account to continue</p>
+
+      <div id="login-alert" class="alert alert-err" role="alert"></div>
+      <div id="login-ok"    class="alert alert-ok"  role="status"></div>
+
+      <div class="field">
+        <label for="l-email">Email address</label>
+        <input type="email" id="l-email" placeholder="you@example.com" autocomplete="email" />
+        <p class="err-msg" id="l-email-err"></p>
+      </div>
+      <div class="field">
+        <label for="l-pass">Password</label>
+        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" />
+        <p class="err-msg" id="l-pass-err"></p>
+      </div>
+
+      <button class="btn btn-primary" id="login-btn" onclick="submitLogin()">
+        <span id="login-label">Sign In</span>
+        <div class="spinner" id="login-spinner"></div>
+      </button>
+
+      <div class="switch-link">
+        Don't have an account? <a onclick="showRegister()">Create one</a>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="register-card" class="auth-card" style="display:none;">
+      <div class="logo">
+        <div class="logo-icon">⬡</div>
+        <div class="logo-text">Nexa<span>Auth</span></div>
+      </div>
+      <h1 class="auth-title">Create account</h1>
+      <p class="auth-sub">Join the system with your details below</p>
+
+      <div id="reg-alert" class="alert alert-err" role="alert"></div>
+
+      <div class="field">
+        <label for="r-name">Full name</label>
+        <input type="text" id="r-name" placeholder="Anuj Kumar" autocomplete="name" />
+        <p class="err-msg" id="r-name-err"></p>
+      </div>
+      <div class="field">
+        <label for="r-email">Email address</label>
+        <input type="email" id="r-email" placeholder="you@example.com" autocomplete="email" />
+        <p class="err-msg" id="r-email-err"></p>
+      </div>
+      <div class="field">
+        <label for="r-pass">Password</label>
+        <input type="password" id="r-pass" placeholder="Min 8 chars, letters + numbers" autocomplete="new-password" />
+        <p class="err-msg" id="r-pass-err"></p>
+      </div>
+      <div class="field">
+        <label for="r-role">Role</label>
+        <select id="r-role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <p class="err-msg" id="r-role-err"></p>
+      </div>
+
+      <button class="btn btn-primary" id="reg-btn" onclick="submitRegister()">
+        <span id="reg-label">Create Account</span>
+        <div class="spinner" id="reg-spinner"></div>
+      </button>
+
+      <div class="switch-link">
+        Already have an account? <a onclick="showLogin()">Sign in</a>
+      </div>
+    </div>
+
+  </div><!-- /auth-section -->
+
+  <!-- ══ DASHBOARD ════════════════════════════════════════════════════════ -->
+  <div id="dashboard" class="dash">
+
+    <nav class="topbar">
+      <div class="logo">
+        <div class="logo-icon">⬡</div>
+        <div class="logo-text">Nexa<span>Auth</span></div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="user-chip">
+          <div class="avatar" id="dash-avatar"></div>
+          <span id="dash-username"></span>
+          <span id="dash-role-badge"></span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">Sign Out</button>
+      </div>
+    </nav>
+
+    <div class="dash-content">
+
+      <!-- Stats -->
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-label">Total Users</div>
+          <div class="stat-val" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛡️</div>
+          <div class="stat-label">Admins</div>
+          <div class="stat-val" id="stat-admins">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🙋</div>
+          <div class="stat-label">Regular Users</div>
+          <div class="stat-val" id="stat-users">—</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-section">
+        <div class="table-header">
+          <div class="table-title">User Directory</div>
+          <div class="filter-row">
+            <button class="btn-filter active" id="filter-all"   onclick="setFilter('all')">All Users</button>
+            <button class="btn-filter"         id="filter-admin" onclick="setFilter('admin')">⬡ Show Only Admins</button>
+          </div>
+        </div>
+        <div id="table-wrap">
+          <div class="empty-state"><div class="big">⏳</div>Loading users…</div>
+        </div>
+      </div>
+
+    </div><!-- /dash-content -->
+  </div><!-- /dashboard -->
+
+</div><!-- /app -->
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const API = '';   // Set to your backend URL, e.g. 'https://yoursite.com/api'
+let currentUser = null;
+let allUsers    = [];
+let currentFilter = 'all';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function showAlert(id, msg, type = 'err') {
+  const el = $(id);
+  el.textContent = msg;
+  el.className = `alert alert-${type} show`;
+}
+function hideAlert(id) {
+  $(id).className = 'alert';
+}
+
+function setLoading(btnId, spinnerId, labelId, loading) {
+  $(btnId).disabled = loading;
+  $(spinnerId).className = 'spinner' + (loading ? ' show' : '');
+  $(labelId).style.opacity = loading ? '0' : '1';
+}
+
+// ── Frontend Validation ──────────────────────────────────────────────────────
+function clearErrors(...ids) { ids.forEach(id => { $(id).className = 'err-msg'; }); }
+function showFieldErr(fieldId, errId, msg) {
+  $(fieldId).classList.add('err');
+  $(errId).textContent = msg;
+  $(errId).classList.add('show');
+  return false;
+}
+
+function validateLogin() {
+  const email = $('l-email').value.trim();
+  const pass  = $('l-pass').value;
+  clearErrors('l-email-err', 'l-pass-err');
+  $('l-email').classList.remove('err');
+  $('l-pass').classList.remove('err');
+  let ok = true;
+  if (!email) { showFieldErr('l-email','l-email-err','Email is required'); ok = false; }
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldErr('l-email','l-email-err','Enter a valid email address'); ok = false; }
+  if (!pass)  { showFieldErr('l-pass','l-pass-err','Password is required'); ok = false; }
+  return ok;
+}
+
+function validateRegister() {
+  const name  = $('r-name').value.trim();
+  const email = $('r-email').value.trim();
+  const pass  = $('r-pass').value;
+  clearErrors('r-name-err','r-email-err','r-pass-err','r-role-err');
+  ['r-name','r-email','r-pass'].forEach(id => $(id).classList.remove('err'));
+  let ok = true;
+  if (!name || name.length < 2) { showFieldErr('r-name','r-name-err','Name must be at least 2 characters'); ok = false; }
+  if (!email) { showFieldErr('r-email','r-email-err','Email is required'); ok = false; }
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldErr('r-email','r-email-err','Enter a valid email address'); ok = false; }
+  if (!pass) { showFieldErr('r-pass','r-pass-err','Password is required'); ok = false; }
+  else if (pass.length < 8) { showFieldErr('r-pass','r-pass-err','Password must be at least 8 characters'); ok = false; }
+  else if (!/[A-Za-z]/.test(pass) || !/[0-9]/.test(pass)) { showFieldErr('r-pass','r-pass-err','Password must include letters and numbers'); ok = false; }
+  return ok;
+}
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function showLogin() {
+  $('register-card').style.display = 'none';
+  $('login-card').style.display = 'block';
+  hideAlert('login-alert'); hideAlert('login-ok');
+}
+function showRegister() {
+  $('login-card').style.display = 'none';
+  $('register-card').style.display = 'block';
+  hideAlert('reg-alert');
+}
+
+function showDashboard(user) {
+  currentUser = user;
+  $('auth-section').style.display = 'none';
+  $('dashboard').classList.add('active');
+  $('dash-avatar').textContent = initials(user.name);
+  $('dash-username').textContent = user.name;
+  $('dash-role-badge').innerHTML = user.role === 'admin'
+    ? '<span class="badge badge-admin">admin</span>'
+    : '<span class="badge badge-user">user</span>';
+  loadUsers();
+}
+
+function logout() {
+  currentUser = null; allUsers = [];
+  $('dashboard').classList.remove('active');
+  $('auth-section').style.display = 'flex';
+  showLogin();
+  // Also call logout.php in production
+  fetch(API + '/logout.php', { method: 'POST', credentials: 'include' }).catch(() => {});
+}
+
+// ── Login ────────────────────────────────────────────────────────────────────
+async function submitLogin() {
+  hideAlert('login-alert'); hideAlert('login-ok');
+  if (!validateLogin()) return;
+
+  const email = $('l-email').value.trim();
+  const pass  = $('l-pass').value;
+
+  setLoading('login-btn','login-spinner','login-label', true);
+
+  try {
+    const res  = await fetch(API + '/login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showDashboard(data.user);
+    } else {
+      showAlert('login-alert', data.message || 'Login failed. Please try again.');
+    }
+  } catch (e) {
+    // DEMO mode: simulate login with seeded data
+    demoLogin(email, pass);
+  } finally {
+    setLoading('login-btn','login-spinner','login-label', false);
+  }
+}
+
+// ── Register ─────────────────────────────────────────────────────────────────
+async function submitRegister() {
+  hideAlert('reg-alert');
+  if (!validateRegister()) return;
+
+  const name  = $('r-name').value.trim();
+  const email = $('r-email').value.trim();
+  const pass  = $('r-pass').value;
+  const role  = $('r-role').value;
+
+  setLoading('reg-btn','reg-spinner','reg-label', true);
+
+  try {
+    const res  = await fetch(API + '/register.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name, email, password: pass, role })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showLogin();
+      showAlert('login-ok', '✓ Account created! Please sign in.', 'ok');
+    } else {
+      showAlert('reg-alert', data.message || 'Registration failed.');
+    }
+  } catch (e) {
+    // DEMO mode
+    demoRegister(name, email, pass, role);
+  } finally {
+    setLoading('reg-btn','reg-spinner','reg-label', false);
+  }
+}
+
+// ── Users API ────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  $('table-wrap').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading users…</div>';
+  try {
+    const url = API + '/users.php' + (currentFilter !== 'all' ? `?role=${currentFilter}` : '');
+    const res  = await fetch(url, { credentials: 'include' });
+    const data = await res.json();
+    if (data.success) {
+      allUsers = data.users;
+      updateStats(data.summary);
+      renderTable(allUsers);
+    }
+  } catch (e) {
+    // DEMO mode
+    demoLoadUsers();
+  }
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  $('filter-all').classList.toggle('active',   f === 'all');
+  $('filter-admin').classList.toggle('active', f === 'admin');
+  loadUsers();
+}
+
+function updateStats(summary) {
+  const total = (summary.admins || 0) + (summary.users || 0);
+  $('stat-total').textContent  = total;
+  $('stat-admins').textContent = summary.admins || 0;
+  $('stat-users').textContent  = summary.users  || 0;
+}
+
+function renderTable(users) {
+  if (!users.length) {
+    $('table-wrap').innerHTML = '<div class="empty-state"><div class="big">🔍</div>No users found for this filter.</div>';
+    return;
+  }
+  const rows = users.map(u => `
+    <tr>
+      <td>
+        <div class="user-cell">
+          <div class="u-avatar">${initials(u.name)}</div>
+          <div>
+            <div class="u-name">${esc(u.name)}</div>
+            <div class="u-email">${esc(u.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td style="color:var(--muted);font-size:0.82rem;">${fmtDate(u.created_at)}</td>
+    </tr>`).join('');
+
+  $('table-wrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>User</th>
+        <th>Role</th>
+        <th>Joined</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(dt) {
+  if (!dt) return '—';
+  try { return new Date(dt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+  catch { return dt; }
+}
+
+// ── DEMO MODE (runs when no backend is available) ─────────────────────────────
+const DEMO_USERS = [
+  { id:1, name:'Anuj', email:'alonesurvivor03@gmail.com', role:'admin', created_at:'2025-01-15T10:30:00Z' },
+  { id:2, name:'Priya Sharma',  email:'priya.sharma@example.com', role:'user', created_at:'2025-02-03T09:10:00Z' },
+  { id:3, name:'Rahul Mehta',   email:'rahul.m@example.com',      role:'user', created_at:'2025-02-18T14:25:00Z' },
+  { id:4, name:'Sneha Patil',   email:'sneha.p@example.com',      role:'user', created_at:'2025-03-05T11:45:00Z' },
+  { id:5, name:'Vikram Nair',   email:'vikram.n@example.com',     role:'user', created_at:'2025-03-22T16:00:00Z' },
+];
+
+function demoLogin(email, pass) {
+  const u = DEMO_USERS.find(x => x.email === email);
+  if (u && pass.length >= 4) {
+    showDashboard(u);
+  } else {
+    showAlert('login-alert', '⚠ Demo mode: use alonesurvivor03@gmail.com with any 4+ char password, or any seeded email.');
+  }
+}
+
+function demoRegister(name, email, pass, role) {
+  if (DEMO_USERS.find(x => x.email === email)) {
+    showAlert('reg-alert', 'This email is already registered. Please use a different email or log in.');
+    return;
+  }
+  if (role === 'admin' && DEMO_USERS.some(x => x.role === 'admin')) {
+    showAlert('reg-alert', 'An admin already exists in the system. Only one admin is allowed.');
+    return;
+  }
+  const newUser = { id: DEMO_USERS.length + 1, name, email, role, created_at: new Date().toISOString() };
+  DEMO_USERS.push(newUser);
+  showLogin();
+  showAlert('login-ok', '✓ Demo account created! Sign in with your credentials.', 'ok');
+}
+
+function demoLoadUsers() {
+  let list = [...DEMO_USERS];
+  if (currentFilter === 'admin') list = list.filter(u => u.role === 'admin');
+  const admins = DEMO_USERS.filter(u => u.role === 'admin').length;
+  updateStats({ admins, users: DEMO_USERS.length - admins });
+  allUsers = list;
+  renderTable(list);
+}
+
+// ── Enter key support ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if ($('login-card').style.display !== 'none') submitLogin();
+  else if ($('register-card').style.display !== 'none') submitRegister();
+});
+</script>
+</body>
+</html>
