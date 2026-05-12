@@ -16,13 +16,35 @@ function getDB() {
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT           => 30,
         ];
-        try {
-            $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database connection failed']);
-            exit;
+        
+        // Retry connection up to 5 times with delays
+        $maxRetries = 5;
+        $retryDelay = 2; // seconds
+        
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+                break; // Success, exit retry loop
+            } catch (PDOException $e) {
+                if ($attempt === $maxRetries) {
+                    // Final attempt failed, return detailed error
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false, 
+                        'message' => 'Database connection failed',
+                        'error' => $e->getMessage(),
+                        'attempt' => $attempt,
+                        'host' => DB_HOST,
+                        'database' => DB_NAME
+                    ]);
+                    exit;
+                }
+                // Wait before retry
+                sleep($retryDelay);
+                $retryDelay *= 2; // Exponential backoff
+            }
         }
     }
     return $pdo;
