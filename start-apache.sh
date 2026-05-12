@@ -1,12 +1,8 @@
 #!/bin/bash
 
-# Start PHP server immediately in background
-echo "Starting PHP server on port ${PORT:-8000}..."
-php -S 0.0.0.0:${PORT:-8000} &
-PHP_PID=$!
+# Initialize database first
+./init-db.sh
 
-# Initialize database in background
-./init-db.sh &
-
-# Wait for the PHP server process
-wait $PHP_PID
+# Start PHP server with router
+echo "Starting PHP server on port ${PORT:-8000} with router..."
+exec php -S 0.0.0.0:${PORT:-8000} router.php
